@@ -1,2 +1,16 @@
+apache
+attrs
+colcon
+devtools
+https
+iterdir
+nargs
 noqa
-pragma
+pathlib
+plugin
+pypi
+pytest
+scspell
+setuptools
+thomas
+xmlrpc
