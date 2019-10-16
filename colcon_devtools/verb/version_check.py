@@ -4,7 +4,9 @@
 import sys
 from xmlrpc.client import ServerProxy
 
+from colcon_core.entry_point import EXTENSION_POINT_GROUP_NAME
 from colcon_core.entry_point import get_all_entry_points
+from colcon_core.entry_point import get_entry_points
 from colcon_core.plugin_system import satisfies_version
 from colcon_core.verb import VerbExtensionPoint
 from pkg_resources import parse_version
@@ -23,6 +25,11 @@ class VersionCheckVerb(VerbExtensionPoint):
         for group in all_entry_points.values():
             for dist, _ in group.values():
                 distributions.add(dist)
+
+        # also consider extension points which don't have any extensions
+        colcon_extension_points = get_entry_points(EXTENSION_POINT_GROUP_NAME)
+        for entry_point in colcon_extension_points.values():
+            distributions.add(entry_point.dist)
 
         pypi = ServerProxy('https://pypi.python.org/pypi')
         for dist in sorted(distributions, key=lambda d: d.project_name):

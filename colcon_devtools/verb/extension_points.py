@@ -32,6 +32,9 @@ class ExtensionPointsVerb(VerbExtensionPoint):
     def main(self, *, context):  # noqa: D102
         colcon_extension_points = get_entry_points(EXTENSION_POINT_GROUP_NAME)
         for name in sorted(colcon_extension_points.keys()):
+            # skip "private" extension points
+            if name.startswith('_'):
+                continue
             self._print_extension_point(
                 context.args, name, colcon_extension_points[name])
 
