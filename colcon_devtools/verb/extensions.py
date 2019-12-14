@@ -20,7 +20,7 @@ class ExtensionsVerb(VerbExtensionPoint):
         parser.add_argument(
             'group_name',
             nargs='?',
-            choices=sorted(list(all_entry_points.keys())),
+            choices=sorted(all_entry_points.keys()),
             metavar='GROUP_NAME',
             help='Only show the extensions in a specific group')
         parser.add_argument(
