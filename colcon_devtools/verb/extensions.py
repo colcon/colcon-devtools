@@ -1,6 +1,8 @@
 # Copyright 2016-2018 Dirk Thomas
 # Licensed under the Apache License, Version 2.0
 
+from contextlib import suppress
+
 from colcon_core.entry_point import get_all_entry_points
 from colcon_core.entry_point import load_entry_point
 from colcon_core.plugin_system import get_first_line_doc
@@ -76,10 +78,8 @@ class ExtensionsVerb(VerbExtensionPoint):
             if entry_point.attrs:
                 print(prefix, ' ', 'attributes:', '.'.join(entry_point.attrs))
             print(prefix, ' ', 'distribution:', repr(dist))
-            try:
+            with suppress(AttributeError):
                 print(prefix, ' ', 'priority:', extension.PRIORITY)
-            except AttributeError:
-                pass
 
         if exception:
             print(prefix, ' ', 'reason:', str(exception))
