@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0
 
 import sys
-from xmlrpc.client import ServerProxy
+import requests
 
 from colcon_core.entry_point import EXTENSION_POINT_GROUP_NAME
 from colcon_core.entry_point import get_all_entry_points
@@ -31,16 +31,17 @@ class VersionCheckVerb(VerbExtensionPoint):
         for entry_point in colcon_extension_points.values():
             distributions.add(entry_point.dist)
 
-        pypi = ServerProxy('https://pypi.python.org/pypi')
+        base_url = 'https://pypi.python.org/pypi/{project}/json'
         for dist in sorted(distributions, key=lambda d: d.project_name):
-            versions = pypi.package_releases(dist.project_name)
-            if not versions:
+            req = requests.get(base_url.format(project=dist.project_name))
+
+            if not req:
                 print(
                     '{dist.project_name}: could not find package on PyPI'
                     .format_map(locals()), file=sys.stderr)
                 continue
 
-            latest_version = versions[0]
+            latest_version = req.json()['info']['version']
             if parse_version(latest_version) == parse_version(dist.version):
                 print(
                     '{dist.project_name} {dist.version}: up-to-date'
