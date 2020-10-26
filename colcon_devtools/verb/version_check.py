@@ -33,9 +33,9 @@ class VersionCheckVerb(VerbExtensionPoint):
 
         base_url = 'https://pypi.python.org/pypi/{project}/json'
         for dist in sorted(distributions, key=lambda d: d.project_name):
-            req = requests.get(base_url.format(project=dist.project_name))
+            response = requests.get(base_url.format(project=dist.project_name))
 
-            if not req:
+            if not response:
                 print(
                     '{dist.project_name}: could not find package on PyPI'
                     .format_map(locals()), file=sys.stderr)
