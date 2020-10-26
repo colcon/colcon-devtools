@@ -41,7 +41,7 @@ class VersionCheckVerb(VerbExtensionPoint):
                     .format_map(locals()), file=sys.stderr)
                 continue
 
-            latest_version = req.json()['info']['version']
+            latest_version = response.json()['info']['version']
             if parse_version(latest_version) == parse_version(dist.version):
                 print(
                     '{dist.project_name} {dist.version}: up-to-date'
