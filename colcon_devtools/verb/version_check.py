@@ -1,8 +1,9 @@
 # Copyright 2016-2018 Dirk Thomas
 # Licensed under the Apache License, Version 2.0
 
+import json
 import sys
-import requests
+import urllib.request
 
 from colcon_core.entry_point import EXTENSION_POINT_GROUP_NAME
 from colcon_core.entry_point import get_all_entry_points
@@ -33,15 +34,23 @@ class VersionCheckVerb(VerbExtensionPoint):
 
         base_url = 'https://pypi.python.org/pypi/{project}/json'
         for dist in sorted(distributions, key=lambda d: d.project_name):
-            response = requests.get(base_url.format(project=dist.project_name))
+            url = base_url.format(project=dist.project_name)
+            response = urllib.request.urlopen(url)
 
-            if not response:
+            if response.status != 200:
                 print(
                     '{dist.project_name}: could not find package on PyPI'
                     .format_map(locals()), file=sys.stderr)
                 continue
 
-            latest_version = response.json()['info']['version']
+            try:
+                data = json.loads(response.read())
+                latest_version = data['info']['version']
+            except JSONDecodeError:
+                print(
+                    '{dist.project_name}: could not parse PyPI response'
+                    .format_map(locals()), file=sys.stderr)
+                continue
             if parse_version(latest_version) == parse_version(dist.version):
                 print(
                     '{dist.project_name} {dist.version}: up-to-date'
