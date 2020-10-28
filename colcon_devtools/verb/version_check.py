@@ -3,6 +3,7 @@
 
 import json
 import sys
+import urllib
 import urllib.request
 
 from colcon_core.entry_point import EXTENSION_POINT_GROUP_NAME
@@ -35,9 +36,21 @@ class VersionCheckVerb(VerbExtensionPoint):
         base_url = 'https://pypi.python.org/pypi/{project}/json'
         for dist in sorted(distributions, key=lambda d: d.project_name):
             url = base_url.format(project=dist.project_name)
-            response = urllib.request.urlopen(url)
 
-            if response.status != 200:
+            try:
+                response = urllib.request.urlopen(url)
+            except urllib.error.HTTPError:
+                print(
+                    '{dist.project_name}: Server could not fulfill the request'
+                    .format_map(locals()), file=sys.stderr)
+                continue
+            except urllib.error.URLError:
+                print(
+                    '{dist.project_name}: Failed to reach server'
+                    .format_map(locals()), file=sys.stderr)
+                continue
+
+            if not response or response.status != 200:
                 print(
                     '{dist.project_name}: could not find package on PyPI'
                     .format_map(locals()), file=sys.stderr)
@@ -45,12 +58,13 @@ class VersionCheckVerb(VerbExtensionPoint):
 
             try:
                 data = json.loads(response.read())
-                latest_version = data['info']['version']
-            except JSONDecodeError:
+            except json.decoder.JSONDecodeError:
                 print(
                     '{dist.project_name}: could not parse PyPI response'
                     .format_map(locals()), file=sys.stderr)
                 continue
+
+            latest_version = data['info']['version']
             if parse_version(latest_version) == parse_version(dist.version):
                 print(
                     '{dist.project_name} {dist.version}: up-to-date'
