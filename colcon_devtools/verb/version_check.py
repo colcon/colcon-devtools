@@ -39,20 +39,20 @@ class VersionCheckVerb(VerbExtensionPoint):
 
             try:
                 response = urllib.request.urlopen(url)
-            except urllib.error.HTTPError:
-                print(
-                    '{dist.project_name}: Server could not fulfill the request'
-                    .format_map(locals()), file=sys.stderr)
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    print(
+                        '{dist.project_name}: could not find package on PyPI'
+                        .format_map(locals()), file=sys.stderr)
+                else:
+                    print(
+                        '{dist.project_name}: Server could not fulfill the '
+                        'request: {e.reason}'
+                        .format_map(locals()), file=sys.stderr)
                 continue
             except urllib.error.URLError:
                 print(
                     '{dist.project_name}: Failed to reach server'
-                    .format_map(locals()), file=sys.stderr)
-                continue
-
-            if not response or response.status != 200:
-                print(
-                    '{dist.project_name}: could not find package on PyPI'
                     .format_map(locals()), file=sys.stderr)
                 continue
 
