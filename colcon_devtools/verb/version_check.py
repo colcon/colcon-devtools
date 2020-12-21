@@ -33,7 +33,7 @@ class VersionCheckVerb(VerbExtensionPoint):
         for entry_point in colcon_extension_points.values():
             distributions.add(entry_point.dist)
 
-        base_url = 'https://pypi.python.org/pypi/{project}/json'
+        base_url = 'https://pypi.org/pypi/{project}/json'
         for dist in sorted(distributions, key=lambda d: d.project_name):
             url = base_url.format(project=dist.project_name)
 
