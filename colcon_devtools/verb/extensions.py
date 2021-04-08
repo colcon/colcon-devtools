@@ -53,7 +53,7 @@ class ExtensionsVerb(VerbExtensionPoint):
         exception = None
         try:
             extension = load_entry_point(entry_point)
-        except Exception as e:
+        except Exception as e:  # noqa: B902
             # catch exceptions raised when loading entry point
             if not args.all:
                 # skip entry points which failed to load
@@ -63,7 +63,7 @@ class ExtensionsVerb(VerbExtensionPoint):
         else:
             try:
                 extension()
-            except Exception as e:
+            except Exception as e:  # noqa: B902
                 # catch exceptions raised in extension constructor
                 if not args.all:
                     # skip extensions which failed to be instantiated
