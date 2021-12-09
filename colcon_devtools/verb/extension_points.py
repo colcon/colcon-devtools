@@ -42,7 +42,7 @@ class ExtensionPointsVerb(VerbExtensionPoint):
         exception = None
         try:
             extension_point = load_entry_point(entry_point)
-        except Exception as e:
+        except Exception as e:  # noqa: B902
             # catch exceptions raised when loading entry point
             if not args.all:
                 # skip entry points which failed to load
