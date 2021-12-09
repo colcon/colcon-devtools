@@ -57,14 +57,21 @@ class VersionCheckVerb(VerbExtensionPoint):
                 continue
 
             try:
-                data = json.loads(response.read())
+                data = json.load(response)
             except json.decoder.JSONDecodeError:
                 print(
                     '{dist.project_name}: could not parse PyPI response'
                     .format_map(locals()), file=sys.stderr)
                 continue
 
-            latest_version = data['info']['version']
+            try:
+                latest_version = data['info']['version']
+            except KeyError:
+                print(
+                    '{dist.project_name}: could not determine version'
+                    .format_map(locals()))
+                continue
+
             if parse_version(latest_version) == parse_version(dist.version):
                 print(
                     '{dist.project_name} {dist.version}: up-to-date'
