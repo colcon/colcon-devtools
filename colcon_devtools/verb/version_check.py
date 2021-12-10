@@ -1,8 +1,10 @@
 # Copyright 2016-2018 Dirk Thomas
 # Licensed under the Apache License, Version 2.0
 
+import json
 import sys
-from xmlrpc.client import ServerProxy
+import urllib
+import urllib.request
 
 from colcon_core.entry_point import EXTENSION_POINT_GROUP_NAME
 from colcon_core.entry_point import get_all_entry_points
@@ -31,16 +33,45 @@ class VersionCheckVerb(VerbExtensionPoint):
         for entry_point in colcon_extension_points.values():
             distributions.add(entry_point.dist)
 
-        pypi = ServerProxy('https://pypi.python.org/pypi')
+        base_url = 'https://pypi.org/pypi/{project}/json'
         for dist in sorted(distributions, key=lambda d: d.project_name):
-            versions = pypi.package_releases(dist.project_name)
-            if not versions:
+            url = base_url.format(project=dist.project_name)
+
+            try:
+                response = urllib.request.urlopen(url)
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    print(
+                        '{dist.project_name}: could not find package on PyPI'
+                        .format_map(locals()), file=sys.stderr)
+                else:
+                    print(
+                        '{dist.project_name}: Server could not fulfill the '
+                        'request: {e.reason}'
+                        .format_map(locals()), file=sys.stderr)
+                continue
+            except urllib.error.URLError:
                 print(
-                    '{dist.project_name}: could not find package on PyPI'
+                    '{dist.project_name}: Failed to reach server'
                     .format_map(locals()), file=sys.stderr)
                 continue
 
-            latest_version = versions[0]
+            try:
+                data = json.load(response)
+            except json.decoder.JSONDecodeError:
+                print(
+                    '{dist.project_name}: could not parse PyPI response'
+                    .format_map(locals()), file=sys.stderr)
+                continue
+
+            try:
+                latest_version = data['info']['version']
+            except KeyError:
+                print(
+                    '{dist.project_name}: could not determine version'
+                    .format_map(locals()))
+                continue
+
             if parse_version(latest_version) == parse_version(dist.version):
                 print(
                     '{dist.project_name} {dist.version}: up-to-date'

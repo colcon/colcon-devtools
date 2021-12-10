@@ -14,4 +14,5 @@ pytest
 scspell
 setuptools
 thomas
-xmlrpc
+urllib
+urlopen
