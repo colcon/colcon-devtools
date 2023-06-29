@@ -3,8 +3,9 @@
 
 from contextlib import suppress
 
-from colcon_core.entry_point import get_all_entry_points
-from colcon_core.entry_point import load_entry_point
+from colcon_core.extension_point import EXTENSION_POINT_GROUP_NAME
+from colcon_core.extension_point import get_all_extension_points
+from colcon_core.extension_point import load_extension_point
 from colcon_core.plugin_system import get_first_line_doc
 from colcon_core.plugin_system import satisfies_version
 from colcon_core.verb import VerbExtensionPoint
@@ -18,11 +19,11 @@ class ExtensionsVerb(VerbExtensionPoint):
         satisfies_version(VerbExtensionPoint.EXTENSION_POINT_VERSION, '^1.0')
 
     def add_arguments(self, *, parser):  # noqa: D102
-        all_entry_points = get_all_entry_points()
+        all_extension_points = get_all_extension_points()
         parser.add_argument(
             'group_name',
             nargs='?',
-            choices=sorted(all_entry_points.keys()),
+            choices=sorted(all_extension_points.keys()),
             metavar='GROUP_NAME',
             help='Only show the extensions in a specific group')
         parser.add_argument(
@@ -38,21 +39,27 @@ class ExtensionsVerb(VerbExtensionPoint):
             help='Show more information for each extension')
 
     def main(self, *, context):  # noqa: D102
-        all_entry_points = get_all_entry_points()
-        for group_name in sorted(all_entry_points.keys()):
+        all_extension_points = get_all_extension_points()
+        for group_name in sorted(all_extension_points.keys()):
             if context.args.group_name is not None:
                 if group_name != context.args.group_name:
                     continue
+            elif group_name == EXTENSION_POINT_GROUP_NAME:
+                # Skip the meta group by default
+                continue
             print(group_name)
-            group = all_entry_points[group_name]
-            for entry_point_name in sorted(group.keys()):
-                (dist, entry_point) = group[entry_point_name]
-                self._print_entry_point(context.args, dist, entry_point)
+            group = all_extension_points[group_name]
+            for extension_point_name in sorted(group.keys()):
+                extension_point_info = group[extension_point_name]
+                self._print_extension_point(
+                    context.args, extension_point_name, extension_point_info,
+                    group_name)
 
-    def _print_entry_point(self, args, dist, entry_point):
+    def _print_extension_point(self, args, name, info, group):
         exception = None
+        value, dist_name, dist_ver = info
         try:
-            extension = load_entry_point(entry_point)
+            extension = load_extension_point(name, value, group)
         except Exception as e:  # noqa: B902
             # catch exceptions raised when loading entry point
             if not args.all:
@@ -71,13 +78,17 @@ class ExtensionsVerb(VerbExtensionPoint):
                 exception = e
 
         prefix = ' ' if exception is None else '-'
-        print(prefix, entry_point.name + ':', get_first_line_doc(extension))
+        print(prefix, name + ':', get_first_line_doc(extension))
 
         if args.verbose:
-            print(prefix, ' ', 'module_name:', entry_point.module_name)
-            if entry_point.attrs:
-                print(prefix, ' ', 'attributes:', '.'.join(entry_point.attrs))
-            print(prefix, ' ', 'distribution:', repr(dist))
+            if ':' in value:
+                module_name, attr = value.split(':', 1)
+            else:
+                module_name, attr = value, None
+            print(prefix, ' ', 'module_name:', module_name)
+            if attr is not None:
+                print(prefix, ' ', 'attributes:', attr)
+            print(prefix, ' ', 'distribution:', dist_name, dist_ver or '')
             with suppress(AttributeError):
                 print(prefix, ' ', 'priority:', extension.PRIORITY)
 
