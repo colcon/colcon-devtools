@@ -6,9 +6,7 @@ import sys
 import urllib
 import urllib.request
 
-from colcon_core.entry_point import EXTENSION_POINT_GROUP_NAME
-from colcon_core.entry_point import get_all_entry_points
-from colcon_core.entry_point import get_entry_points
+from colcon_core.extension_point import get_all_extension_points
 from colcon_core.plugin_system import satisfies_version
 from colcon_core.verb import VerbExtensionPoint
 from pkg_resources import parse_version
@@ -23,36 +21,32 @@ class VersionCheckVerb(VerbExtensionPoint):
 
     def main(self, *, context):  # noqa: D102
         distributions = set()
-        all_entry_points = get_all_entry_points()
-        for group in all_entry_points.values():
-            for dist, _ in group.values():
-                distributions.add(dist)
-
-        # also consider extension points which don't have any extensions
-        colcon_extension_points = get_entry_points(EXTENSION_POINT_GROUP_NAME)
-        for entry_point in colcon_extension_points.values():
-            distributions.add(entry_point.dist)
+        all_extension_points = get_all_extension_points()
+        for group in all_extension_points.values():
+            for info in group.values():
+                if info[2]:
+                    distributions.add((info[1], info[2]))
 
         base_url = 'https://pypi.org/pypi/{project}/json'
-        for dist in sorted(distributions, key=lambda d: d.project_name):
-            url = base_url.format(project=dist.project_name)
+        for dist_name, dist_ver in sorted(distributions):
+            url = base_url.format(project=dist_name)
 
             try:
                 response = urllib.request.urlopen(url)
             except urllib.error.HTTPError as e:
                 if e.code == 404:
                     print(
-                        '{dist.project_name}: could not find package on PyPI'
+                        '{dist_name}: could not find package on PyPI'
                         .format_map(locals()), file=sys.stderr)
                 else:
                     print(
-                        '{dist.project_name}: Server could not fulfill the '
+                        '{dist_name}: Server could not fulfill the '
                         'request: {e.reason}'
                         .format_map(locals()), file=sys.stderr)
                 continue
             except urllib.error.URLError:
                 print(
-                    '{dist.project_name}: Failed to reach server'
+                    '{dist_name}: Failed to reach server'
                     .format_map(locals()), file=sys.stderr)
                 continue
 
@@ -60,7 +54,7 @@ class VersionCheckVerb(VerbExtensionPoint):
                 data = json.load(response)
             except json.decoder.JSONDecodeError:
                 print(
-                    '{dist.project_name}: could not parse PyPI response'
+                    '{dist_name}: could not parse PyPI response'
                     .format_map(locals()), file=sys.stderr)
                 continue
 
@@ -68,23 +62,23 @@ class VersionCheckVerb(VerbExtensionPoint):
                 latest_version = data['info']['version']
             except KeyError:
                 print(
-                    '{dist.project_name}: could not determine version'
+                    '{dist_name}: could not determine version'
                     .format_map(locals()))
                 continue
 
-            if parse_version(latest_version) == parse_version(dist.version):
+            if parse_version(latest_version) == parse_version(dist_ver):
                 print(
-                    '{dist.project_name} {dist.version}: up-to-date'
+                    '{dist_name} {dist_ver}: up-to-date'
                     .format_map(locals()))
                 continue
-            if parse_version(dist.version) < parse_version(latest_version):
+            if parse_version(dist_ver) < parse_version(latest_version):
                 print(
-                    '{dist.project_name} {dist.version}: newer version '
+                    '{dist_name} {dist_ver}: newer version '
                     'available ({latest_version})'
                     .format_map(locals()))
                 continue
             print(
-                '{dist.project_name} {dist.version}: local version is newer '
+                '{dist_name} {dist_ver}: local version is newer '
                 'than latest release ({latest_version})'
                 .format_map(locals()))
             continue
