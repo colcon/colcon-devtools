@@ -4,10 +4,12 @@ contextlib
 devtools
 https
 iterdir
+linter
 nargs
 noqa
 pathlib
 plugin
+pydocstyle
 pypi
 pytest
 scspell
