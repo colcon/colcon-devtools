@@ -9,7 +9,7 @@ import urllib.request
 from colcon_core.extension_point import get_all_extension_points
 from colcon_core.plugin_system import satisfies_version
 from colcon_core.verb import VerbExtensionPoint
-from pkg_resources import parse_version
+from packaging.version import Version
 
 
 class VersionCheckVerb(VerbExtensionPoint):
@@ -66,12 +66,12 @@ class VersionCheckVerb(VerbExtensionPoint):
                     .format_map(locals()))
                 continue
 
-            if parse_version(latest_version) == parse_version(dist_ver):
+            if Version(latest_version) == Version(dist_ver):
                 print(
                     '{dist_name} {dist_ver}: up-to-date'
                     .format_map(locals()))
                 continue
-            if parse_version(dist_ver) < parse_version(latest_version):
+            if Version(dist_ver) < Version(latest_version):
                 print(
                     '{dist_name} {dist_ver}: newer version '
                     'available ({latest_version})'
